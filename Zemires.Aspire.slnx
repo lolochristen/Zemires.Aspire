@@ -1,0 +1,21 @@
+<Solution>
+  <Folder Name="/examples/">
+    <Project Path="examples/Zemires.Aspire.Hosting.N8n.AppHost/Zemires.Aspire.Hosting.N8n.AppHost.csproj" />
+  </Folder>
+  <Folder Name="/playground/" />
+  <Folder Name="/playground/WorkflowApp/">
+    <Project Path="playground/WorkflowApp/WorkflowApp.ApiService/WorkflowApp.ApiService.csproj" />
+    <Project Path="playground/WorkflowApp/WorkflowApp.AppHost/WorkflowApp.AppHost.csproj" />
+    <Project Path="playground/WorkflowApp/WorkflowApp.ServiceDefaults/WorkflowApp.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Zemires.Aspire.Hosting.N8n.Tests/Zemires.Aspire.Hosting.N8n.Tests.csproj" Id="8b300e87-83a6-4a1c-99fe-7df19076c9c1" />
+  </Folder>
+  <Project Path="src/Zemires.Aspire.Hosting.N8n/Zemires.Aspire.Hosting.N8n.csproj" />
+  <Project Path="src/Zemires.Aspire.N8n/Zemires.Aspire.N8n.csproj" />
+  <Project Path="src/Zemires.N8n.Api/Zemires.N8n.Api.csproj" />
+</Solution>
