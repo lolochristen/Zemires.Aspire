@@ -1,6 +1,6 @@
 # Zemires.Aspire
 
-.NET Aspire Extensions — utilities and integrations to support Aspire-based workflows and n8n integrations.
+.NET Aspire Extensions for n8n.
 
 ## Overview
 
@@ -41,13 +41,23 @@ Example AppHost entry (examples/Zemires.Aspire.Hosting.N8n.AppHost/AppHost.cs):
 
 This registers a resource named "n8n" with the distributed application host. The host will manage that resource and expose per-resource HTTP clients in tests and when running the AppHost.
 
-## Regenerating the n8n API client
+## Advanced Scenario
 
-The n8n API client in `src/Zemires.N8n.Api` is generated with Kiota. The generator command (recorded in that project's README) is:
+Setup n8n using workers communicating via Postgres database and Redis queue including OopenTelemetry support:
 
-    kiota generate -d .\\n8n-api-1.yaml -l csharp -n Zemires.N8n.Api -c N8nClient -o .
+    var n8n = builder.AddN8n("n8n", port: 5678)
+        .WithDataBindMount("./.n8n_data")
+        .WithPostgresDatabase(db)
+        .WithQueueMode(redis)
+        .WithTimeZone("Europe/Zurich")
+        .WithOtlpExporter();
 
-Run this from `src\Zemires.N8n.Api` to regenerate the client after updating the OpenAPI spec.
+    var worker = n8n.AddWorker("n8n-worker", port: 5679)
+        .WithPostgresDatabase(db)
+        .WithQueueMode(redis)
+        .WithTimeZone("Europe/Zurich")
+        .WithOtlpExporter();
+
 
 ## Contributing
 
