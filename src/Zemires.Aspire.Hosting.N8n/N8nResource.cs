@@ -45,6 +45,9 @@ public class N8nResource : ContainerResource, IResourceWithConnectionString
     /// </remarks>
     public ReferenceExpression UriExpression => ReferenceExpression.Create($"http://{Host}:{Port}");
 
+    /// <summary>
+    /// Gets the ParameterResource that identifies the encryption key used to protect sensitive data.
+    /// </summary>
     public ParameterResource EncryptionKeyParameter { get; }
 
     IEnumerable<KeyValuePair<string, ReferenceExpression>> IResourceWithConnectionString.GetConnectionProperties()

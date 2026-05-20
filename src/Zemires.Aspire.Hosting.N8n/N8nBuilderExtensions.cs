@@ -50,6 +50,7 @@ public static class N8nBuilderExtensions
             .WithImageRegistry(N8nContainerImageTags.Registry)
             .WithHttpEndpoint(targetPort: N8nPort, port: port, name: N8nResource.PrimaryEndpointName, env: "N8N_PORT")
             .WithHttpHealthCheck("/healthz", 200, N8nResource.PrimaryEndpointName)
+            .WithIconName("BranchFork", IconVariant.Regular)
             .WithEnvironment("OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS", "true")
             .WithEnvironment("N8N_ENCRYPTION_KEY", encryptionKeyParameter)
             .WithEnvironment("WEBHOOK_URL", N8n.GetEndpoint(N8nResource.PrimaryEndpointName, builder.ExecutionContext.IsPublishMode ? KnownNetworkIdentifiers.PublicInternet : KnownNetworkIdentifiers.LocalhostNetwork));
@@ -234,17 +235,18 @@ public static class N8nBuilderExtensions
     /// <param name="name">The name to use for the worker resource.</param>
     /// <param name="port">The host port to bind the underlying container to.</param>
     /// <returns>A new <see cref="IResourceBuilder{N8nResource}"/> for the worker instance.</returns>
-    public static IResourceBuilder<N8nResource> AddWorker(this IResourceBuilder<N8nResource> n8nBuilder, string name, int? port = null)
+    public static IResourceBuilder<N8nWorkerResource> AddWorker(this IResourceBuilder<N8nResource> n8nBuilder, string name, int? port = null)
     {
         ArgumentNullException.ThrowIfNull(n8nBuilder);
 
         // worker does not support https
-        var worker = new N8nResource(name, n8nBuilder.Resource.EncryptionKeyParameter);
+        var worker = new N8nWorkerResource(n8nBuilder.Resource.Name + "-" + name, n8nBuilder.Resource);
 
         var workerBuilder = n8nBuilder.ApplicationBuilder.AddResource(worker)
             .WithImage(N8nContainerImageTags.Image, N8nContainerImageTags.Tag)
             .WithImageRegistry(N8nContainerImageTags.Registry)
             .WithArgs("worker")
+            .WithIconName("SettingsCogMultiple", IconVariant.Filled)
             .WithHttpEndpoint(targetPort: N8nPort, port: port, name: N8nResource.PrimaryEndpointName, env: "N8N_PORT")
             .WithHttpHealthCheck("/healthz", 200, N8nResource.PrimaryEndpointName)
             .WithEnvironment("N8N_ENCRYPTION_KEY", n8nBuilder.Resource.EncryptionKeyParameter)
