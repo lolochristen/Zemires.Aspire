@@ -3,6 +3,9 @@
     <Project Path="examples/Zemires.Aspire.Hosting.N8n.AppHost/Zemires.Aspire.Hosting.N8n.AppHost.csproj" />
   </Folder>
   <Folder Name="/playground/" />
+  <Folder Name="/playground/EntraIdSSOApp/">
+    <Project Path="playground/EntraIdSSOApp/EntraIdSSOApp.AppHost/EntraIdSSOApp.AppHost.csproj" />
+  </Folder>
   <Folder Name="/playground/WorkflowApp/">
     <Project Path="playground/WorkflowApp/WorkflowApp.ApiService/WorkflowApp.ApiService.csproj" />
     <Project Path="playground/WorkflowApp/WorkflowApp.AppHost/WorkflowApp.AppHost.csproj" />

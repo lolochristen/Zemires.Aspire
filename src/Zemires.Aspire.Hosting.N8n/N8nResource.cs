@@ -50,6 +50,12 @@ public class N8nResource : ContainerResource, IResourceWithConnectionString
     /// </summary>
     public ParameterResource EncryptionKeyParameter { get; }
 
+    /// <summary>
+    /// Gets the ParameterResource that holds the plaintext instance owner password, or <see langword="null"/> if
+    /// <see cref="N8nBuilderExtensions.WithInstanceOwner"/> has not been called.
+    /// </summary>
+    public ParameterResource? InstanceOwnerPassword { get; internal set; }
+
     IEnumerable<KeyValuePair<string, ReferenceExpression>> IResourceWithConnectionString.GetConnectionProperties()
     {
         yield return new("Host", ReferenceExpression.Create($"{Host}"));

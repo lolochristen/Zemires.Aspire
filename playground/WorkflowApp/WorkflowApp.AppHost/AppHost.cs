@@ -1,6 +1,8 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var adminApiKey = builder.AddParameter("AdminApiKey", true);
+var ownerPassword = builder.AddParameter("owner-password", true);
+var licenseKey = builder.AddParameter("license-key", true);
+var adminApiKey = builder.AddParameter("admin-api-key", true); // value needs to be created manually in n8n
 
 var postgres = builder.AddPostgres("postgres")
     .WithDataVolume();
@@ -19,6 +21,8 @@ var n8n = builder.AddN8n("n8n", port: 5678)
     .WithPostgresDatabase(db)
     .WithQueueMode(redis)
     .WithTimeZone("Europe/Zurich")
+    .WithInstanceOwner("admin@dev.local", "Admin", "Local", ownerPassword)
+    .WithLicenseKey(licenseKey)
     .WithOtlpExporter()
     .WithReference(ollama)
     .WithEnvironment("CREDENTIALS_OVERWRITE_DATA", $"{{\"ollamaApi\":{{\"baseUrl\":\"{ollama.Resource.PrimaryEndpoint}\"}} }}")

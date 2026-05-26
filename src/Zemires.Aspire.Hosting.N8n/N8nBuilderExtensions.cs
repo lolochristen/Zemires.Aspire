@@ -286,6 +286,46 @@ public static class N8nBuilderExtensions
     }
 
     /// <summary>
+    /// Configures the n8n instance owner via environment variables.
+    /// </summary>
+    /// <param name="builder">The N8n resource builder to configure.</param>
+    /// <param name="email">The instance owner email address (<c>N8N_INSTANCE_OWNER_EMAIL</c>).</param>
+    /// <param name="firstName">The instance owner first name (<c>N8N_INSTANCE_OWNER_FIRST_NAME</c>).</param>
+    /// <param name="lastName">The instance owner last name (<c>N8N_INSTANCE_OWNER_LAST_NAME</c>).</param>
+    /// <param name="password">
+    /// The parameter used to provide the plaintext password. The password is bcrypt-hashed before being passed
+    /// to the container as <c>N8N_INSTANCE_OWNER_PASSWORD_HASH</c>.
+    /// If <see langword="null"/> a random password will be generated.
+    /// </param>
+    /// <returns>The same <see cref="IResourceBuilder{N8nResource}"/> instance for chaining.</returns>
+    public static IResourceBuilder<N8nResource> WithInstanceOwner(
+        this IResourceBuilder<N8nResource> builder,
+        string email,
+        string firstName,
+        string lastName,
+        IResourceBuilder<ParameterResource>? password = null)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNullOrEmpty(email);
+
+        var passwordParameter = password?.Resource
+            ?? ParameterResourceBuilderExtensions.CreateDefaultPasswordParameter(builder.ApplicationBuilder, $"{builder.Resource.Name}-instance-owner-password");
+
+        builder.Resource.InstanceOwnerPassword = passwordParameter;
+
+        return builder
+            .WithEnvironment("N8N_INSTANCE_OWNER_MANAGED_BY_ENV", "true")
+            .WithEnvironment("N8N_INSTANCE_OWNER_EMAIL", email)
+            .WithEnvironment("N8N_INSTANCE_OWNER_FIRST_NAME", firstName)
+            .WithEnvironment("N8N_INSTANCE_OWNER_LAST_NAME", lastName)
+            .WithEnvironment(async ctx =>
+            {
+                var plainPassword = await passwordParameter.GetValueAsync(ctx.CancellationToken);
+                ctx.EnvironmentVariables["N8N_INSTANCE_OWNER_PASSWORD_HASH"] = BCrypt.Net.BCrypt.HashPassword(plainPassword);
+            });
+    }
+
+    /// <summary>
     /// Configures the resource builder to enable OpenTelemetry Protocol (OTLP) exporting for N8n resources using the
     /// HTTP/Protobuf protocol.
     /// </summary>
@@ -294,6 +334,47 @@ public static class N8nBuilderExtensions
     /// to ensure that telemetry data is exported from N8n resources in a compatible format.</remarks>
     /// <param name="builder">The resource builder to configure for OTLP exporting. Cannot be null.</param>
     /// <returns>The same <see cref="IResourceBuilder{N8nResource}"/> instance for chaining.</returns>
+    /// <summary>
+    /// Configures the N8n resource with an enterprise license key.
+    /// Sets <c>N8N_LICENSE_ACTIVATION_KEY</c> and suppresses the usage page via <c>N8N_HIDE_USAGE_PAGE</c>.
+    /// </summary>
+    /// <param name="builder">The N8n resource builder to configure.</param>
+    /// <param name="licenseKey">The parameter that contains the license activation key.</param>
+    /// <returns>The same <see cref="IResourceBuilder{N8nResource}"/> instance for chaining.</returns>
+    public static IResourceBuilder<N8nResource> WithLicenseKey(
+        this IResourceBuilder<N8nResource> builder,
+        IResourceBuilder<ParameterResource> licenseKey)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(licenseKey);
+
+        return builder
+            .WithEnvironment("N8N_LICENSE_ACTIVATION_KEY", licenseKey.Resource)
+            .WithEnvironment("N8N_HIDE_USAGE_PAGE", "true");
+    }
+
+    /// <summary>
+    /// Adds a license key parameter to the resource's application builder.
+    /// </summary>
+    /// <remarks>Registers a parameter named "{resourceName}-license-key" (using the resource's Name) via
+    /// ApplicationBuilder.AddParameter.</remarks>
+    /// <param name="builder">The resource builder to configure.</param>
+    /// <param name="licenseKey">The license key value to register as a parameter.</param>
+    /// <returns>The same resource builder instance for chaining.</returns>
+    public static IResourceBuilder<N8nResource> WithLicenseKey(
+        this IResourceBuilder<N8nResource> builder,
+        string licenseKey) 
+            => WithLicenseKey(builder, builder.ApplicationBuilder.AddParameter(builder.Resource.Name + "-license-key", licenseKey));
+
+    /// <summary>
+    /// Adds an OTLP exporter using HTTP/protobuf and maps n8n-specific environment variables to standard OpenTelemetry
+    /// environment variables.
+    /// </summary>
+    /// <remarks>Sets N8N_OTEL_ENABLED to "true" and maps N8N_OTEL_EXPORTER_OTLP_ENDPOINT,
+    /// N8N_OTEL_EXPORTER_OTLP_HEADERS, and N8N_OTEL_EXPORTER_SERVICE_NAME to the corresponding
+    /// OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS, and OTEL_SERVICE_NAME environment variables.</remarks>
+    /// <param name="builder">The resource builder to configure.</param>
+    /// <returns>The configured resource builder for chaining.</returns>
     public static IResourceBuilder<N8nResource> WithOtlpExporter(this IResourceBuilder<N8nResource> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
