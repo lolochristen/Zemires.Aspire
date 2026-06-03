@@ -3,6 +3,10 @@
     <Project Path="examples/Zemires.Aspire.Hosting.N8n.AppHost/Zemires.Aspire.Hosting.N8n.AppHost.csproj" />
   </Folder>
   <Folder Name="/playground/" />
+  <Folder Name="/playground/AzureContainerApp/">
+    <Project Path="playground/AzureContainerApp/AzureContainerApp.AppHost/AzureContainerApp.AppHost.csproj" Id="99d256f9-0b6b-4718-a00d-de19986965bc" />
+    <Project Path="playground/AzureContainerApp/AzureContainerApp.ServiceDefaults/AzureContainerApp.ServiceDefaults.csproj" />
+  </Folder>
   <Folder Name="/playground/EntraIdSSOApp/">
     <Project Path="playground/EntraIdSSOApp/EntraIdSSOApp.AppHost/EntraIdSSOApp.AppHost.csproj" />
   </Folder>

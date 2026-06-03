@@ -2,8 +2,17 @@ namespace CommunityToolkit.Aspire.Hosting.N8n;
 
 internal static class N8nContainerImageTags
 {
-    public const string Registry = "docker.n8n.io";
+    /// <summary>
+    /// The registry for the n8n container image.
+    /// </summary>
+    public const string Registry = "docker.io";
+    /// <summary>
+    /// The image name for n8n.
+    /// </summary>
     public const string Image = "n8nio/n8n";
-    public const string Tag = "2.21.7";
+    /// <summary>
+    /// The tag for the n8n container image.
+    /// </summary>
+    public const string Tag = "2.22.6";
 }
 
