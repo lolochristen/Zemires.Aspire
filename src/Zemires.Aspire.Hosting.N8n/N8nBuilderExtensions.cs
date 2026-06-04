@@ -364,7 +364,18 @@ public static class N8nBuilderExtensions
     public static IResourceBuilder<N8nResource> WithLicenseKey(
         this IResourceBuilder<N8nResource> builder,
         string licenseKey) 
-            => WithLicenseKey(builder, builder.ApplicationBuilder.AddParameter(builder.Resource.Name + "-license-key", licenseKey));
+            => WithLicenseKey(builder, builder.ApplicationBuilder.AddParameter(builder.Resource.Name + "-license-key", value: licenseKey, secret: true));
+
+    /// <summary>
+    /// Adds a license key parameter to the resource's application builder.
+    /// </summary>
+    /// <remarks>Registers a parameter named "{resourceName}-license-key" (using the resource's Name) via
+    /// ApplicationBuilder.AddParameter.</remarks>
+    /// <param name="builder">The resource builder to configure.</param>
+    /// <returns>The same resource builder instance for chaining.</returns>
+    public static IResourceBuilder<N8nResource> WithLicenseKey(
+        this IResourceBuilder<N8nResource> builder)
+            => WithLicenseKey(builder, builder.ApplicationBuilder.AddParameter(builder.Resource.Name + "-license-key", secret: true));
 
     /// <summary>
     /// Adds an OTLP exporter using HTTP/protobuf and maps n8n-specific environment variables to standard OpenTelemetry

@@ -33,7 +33,7 @@ param clientAppName string
 param clientAppDisplayName string
 
 @description('Specifies the scopes that the client application requires.')
-param clientAppScopes array = ['User.Read', 'offline_access', 'openid', 'profile']
+param clientAppScopes array = ['offline_access', 'openid', 'profile', 'email']
 
 param serviceManagementReference string = ''
 
@@ -43,7 +43,7 @@ param webAppEndpoint string
 
 param location string = ''
 
-param endDateTime string = dateTimeAdd(utcNow(), 'P2Y')
+param now string = utcNow()
 
 // Get the MS Graph Service Principal based on its application ID:
 // https://learn.microsoft.com/troubleshoot/entra/entra-id/governance/verify-first-party-apps-sign-in
@@ -60,8 +60,8 @@ resource clientApp 'Microsoft.Graph/applications@v1.0' = {
   serviceManagementReference: empty(serviceManagementReference) ? null : serviceManagementReference
   web: {
     redirectUris: [
-      'https://localhost:5678/.auth/login/aad/callback'
-      '${webAppEndpoint}/.auth/login/aad/callback'
+      'https://localhost:5678/auth/oidc/callback'
+      '${webAppEndpoint}/auth/oidc/callback'
     ]
     implicitGrantSettings: { enableIdTokenIssuance: true }
   }
@@ -76,12 +76,22 @@ resource clientApp 'Microsoft.Graph/applications@v1.0' = {
       ]
     }
   ]
-  passwordCredentials: [
+  // passwordCredentials: [
+  //   {
+  //     displayName: 'Client App Secret'
+  //     endDateTime: endDateTime
+  //   }
+  // ]
+
+  optionalClaims: {
+    idToken: [
     {
-      displayName: 'Client App Secret'
-      endDateTime: endDateTime
+        name: 'email'
+        essential: false
+        source: null
     }
-  ]
+    ]
+  }
 
   resource clientAppFic 'federatedIdentityCredentials@v1.0' = if (!empty(webAppIdentityId)) {
     name: '${clientApp.uniqueName}/miAsFic'
@@ -99,4 +109,3 @@ resource clientSp 'Microsoft.Graph/servicePrincipals@v1.0' = {
 
 output clientAppId string = clientApp.appId
 output clientSpId string = clientSp.id
-output clientSecret string = clientApp.passwordCredentials[0].secretText
