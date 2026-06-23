@@ -46,12 +46,12 @@ public static class N8nBuilderExtensions
         var N8n = new N8nResource(name, encryptionKeyParameter);
 
         var n8nBuilder = builder.AddResource(N8n)
-            .WithImage(N8nContainerImageTags.Image, N8nContainerImageTags.Tag)
-            .WithImageRegistry(N8nContainerImageTags.Registry)
+            .WithAnnotation(new ContainerImageAnnotation { Image = N8nContainerImageTags.Image, Tag = N8nContainerImageTags.Tag, Registry = N8nContainerImageTags.Registry })
             .WithHttpEndpoint(targetPort: N8nPort, port: port, name: N8nResource.PrimaryEndpointName, env: "N8N_PORT")
             .WithHttpHealthCheck("/healthz", 200, N8nResource.PrimaryEndpointName)
             .WithIconName("BranchFork", IconVariant.Regular)
             .WithEnvironment("OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS", "true")
+            .WithEnvironment("N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS", "false")
             .WithEnvironment("N8N_ENCRYPTION_KEY", encryptionKeyParameter)
             .WithEnvironment("WEBHOOK_URL", N8n.GetEndpoint(N8nResource.PrimaryEndpointName, builder.ExecutionContext.IsPublishMode ? KnownNetworkIdentifiers.PublicInternet : KnownNetworkIdentifiers.LocalhostNetwork));
 
@@ -243,12 +243,12 @@ public static class N8nBuilderExtensions
         var worker = new N8nWorkerResource(n8nBuilder.Resource.Name + "-" + name, n8nBuilder.Resource);
 
         var workerBuilder = n8nBuilder.ApplicationBuilder.AddResource(worker)
-            .WithImage(N8nContainerImageTags.Image, N8nContainerImageTags.Tag)
-            .WithImageRegistry(N8nContainerImageTags.Registry)
+            .WithAnnotation(new ContainerImageAnnotation { Image = N8nContainerImageTags.Image, Tag = N8nContainerImageTags.Tag, Registry = N8nContainerImageTags.Registry })
             .WithArgs("worker")
             .WithIconName("SettingsCogMultiple", IconVariant.Filled)
             .WithHttpEndpoint(targetPort: N8nPort, port: port, name: N8nResource.PrimaryEndpointName, env: "N8N_PORT")
             .WithHttpHealthCheck("/healthz", 200, N8nResource.PrimaryEndpointName)
+            .WithEnvironment("N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS", "false")
             .WithEnvironment("N8N_ENCRYPTION_KEY", n8nBuilder.Resource.EncryptionKeyParameter)
             .WithEnvironment("WEBHOOK_URL", n8nBuilder.GetEndpoint(N8nResource.PrimaryEndpointName, n8nBuilder.ApplicationBuilder.ExecutionContext.IsPublishMode ? KnownNetworkIdentifiers.PublicInternet : KnownNetworkIdentifiers.LocalhostNetwork))
             .WithEnvironment("QUEUE_HEALTH_CHECK_ACTIVE", "true")
