@@ -7,6 +7,16 @@
     <Project Path="playground/AzureContainerApp/AzureContainerApp.AppHost/AzureContainerApp.AppHost.csproj" Id="99d256f9-0b6b-4718-a00d-de19986965bc" />
     <Project Path="playground/AzureContainerApp/AzureContainerApp.ServiceDefaults/AzureContainerApp.ServiceDefaults.csproj" />
   </Folder>
+  <Folder Name="/playground/AzureN8n/">
+    <Project Path="playground/AzureN8n/AzureN8n.ApiService/AzureN8n.ApiService.csproj" />
+    <Project Path="playground/AzureN8n/AzureN8n.AppHost/AzureN8n.AppHost.csproj" Id="5a80ad28-9419-4a14-b6b0-8639bff23002" />
+    <Project Path="playground/AzureN8n/AzureN8n.ServiceDefaults/AzureN8n.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/playground/CockroachDBTest/">
+    <Project Path="playground/CockroachDBTest/CockroachDBTest.ApiService/CockroachDBTest.ApiService.csproj" />
+    <Project Path="playground/CockroachDBTest/CockroachDBTest.AppHost/CockroachDBTest.AppHost.csproj" Id="c38302ed-89c7-49a5-850e-9b978ba2f1a9" />
+    <Project Path="playground/CockroachDBTest/CockroachDBTest.ServiceDefaults/CockroachDBTest.ServiceDefaults.csproj" />
+  </Folder>
   <Folder Name="/playground/EntraIdSSOApp/">
     <Project Path="playground/EntraIdSSOApp/EntraIdSSOApp.AppHost/EntraIdSSOApp.AppHost.csproj" />
   </Folder>
@@ -22,6 +32,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Zemires.Aspire.Hosting.N8n.Tests/Zemires.Aspire.Hosting.N8n.Tests.csproj" Id="8b300e87-83a6-4a1c-99fe-7df19076c9c1" />
   </Folder>
+  <Project Path="src/Zemires.Aspire.Hosting.CockroachDB/Zemires.Aspire.Hosting.CockroachDB.csproj" Id="db497c52-1e17-4889-a826-c4c66bf8efa1" />
   <Project Path="src/Zemires.Aspire.Hosting.N8n/Zemires.Aspire.Hosting.N8n.csproj" />
   <Project Path="src/Zemires.Aspire.N8n/Zemires.Aspire.N8n.csproj" />
   <Project Path="src/Zemires.N8n.Api/Zemires.N8n.Api.csproj" />

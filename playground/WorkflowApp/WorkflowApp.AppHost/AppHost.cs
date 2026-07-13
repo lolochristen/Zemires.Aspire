@@ -26,18 +26,22 @@ var n8n = builder.AddN8n("n8n", port: 5678)
     .WithOtlpExporter()
     .WithReference(ollama)
     .WithEnvironment("CREDENTIALS_OVERWRITE_DATA", $"{{\"ollamaApi\":{{\"baseUrl\":\"{ollama.Resource.PrimaryEndpoint}\"}} }}")
-    .WithEnvironment("CREDENTIALS_OVERWRITE_PERSISTENCE", "true");
+    .WithEnvironment("CREDENTIALS_OVERWRITE_PERSISTENCE", "true")
+    .WithCommunityPackages("n8n-nodes-openapi-node@0.1.4");
 
 var worker = n8n.AddWorker("worker", port: 5679)
     .WithPostgresDatabase(db)
     .WithQueueMode(redis)
     .WithTimeZone("Europe/Zurich")
     .WithOtlpExporter()
-    .WithEnvironment("CREDENTIALS_OVERWRITE_DATA", $"{{\"ollamaApi\":{{\"baseUrl\":\"{ollama.Resource.PrimaryEndpoint}\"}} }}");
+    .WithEnvironment("CREDENTIALS_OVERWRITE_DATA", $"{{\"ollamaApi\":{{\"baseUrl\":\"{ollama.Resource.PrimaryEndpoint}\"}} }}")
+    .WithCommunityPackages("n8n-nodes-openapi-node@0.1.4");
 
-builder.AddProject<Projects.WorkflowApp_ApiService>("apiservice")
+var api = builder.AddProject<Projects.WorkflowApp_ApiService>("apiservice")
     .WithReference(n8n)
     .WaitFor(n8n)
     .WithEnvironment("Aspire__n8n__Client__ApiKey", adminApiKey);
+
+worker.WithReference(api);
 
 builder.Build().Run();

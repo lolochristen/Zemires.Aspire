@@ -1,6 +1,7 @@
 using Aspire.Hosting.ApplicationModel;
 using CommunityToolkit.Aspire.Hosting.N8n;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 
 namespace Aspire.Hosting;
 
@@ -398,5 +399,27 @@ public static class N8nBuilderExtensions
                 ctx.EnvironmentVariables["N8N_OTEL_EXPORTER_OTLP_HEADERS"] = ctx.EnvironmentVariables["OTEL_EXPORTER_OTLP_HEADERS"];
                 ctx.EnvironmentVariables["N8N_OTEL_EXPORTER_SERVICE_NAME"] = ctx.EnvironmentVariables["OTEL_SERVICE_NAME"];
             });
+    }
+
+    /// <summary>
+    /// Enables Community Packages and if packages are given, installs the packages as predefined packages.
+    /// </summary>
+    /// <param name="builder">The resource builder to configure.</param>
+    /// <param name="packageNames">package name, e.g.n8n-nodes-foo or n8n-nodes-foo@version </param>
+    /// <returns></returns>
+    public static IResourceBuilder<N8nResource> WithCommunityPackages(this IResourceBuilder<N8nResource> builder, params string[] packageNames)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(packageNames);
+
+        return builder.WithEnvironment(ctx =>
+        {
+            ctx.EnvironmentVariables["N8N_COMMUNITY_PACKAGES_ENABLED"] = "true";
+            if (packageNames != null && packageNames.Length > 0)
+            {
+                ctx.EnvironmentVariables["N8N_COMMUNITY_PACKAGES_MANAGED_BY_ENV"] = "true";
+                ctx.EnvironmentVariables["N8N_COMMUNITY_PACKAGES"] = JsonSerializer.Serialize(packageNames.Select(p => new { name = p }).ToArray(), JsonSerializerOptions.Web);
+            }
+        });
     }
 }

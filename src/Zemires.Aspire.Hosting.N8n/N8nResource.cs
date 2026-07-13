@@ -52,7 +52,7 @@ public class N8nResource : ContainerResource, IResourceWithConnectionString
 
     /// <summary>
     /// Gets the ParameterResource that holds the plaintext instance owner password, or <see langword="null"/> if
-    /// <see cref="N8nBuilderExtensions.WithInstanceOwner"/> has not been called.
+    /// <see cref="CockroachDBBuilderExtensions.WithInstanceOwner"/> has not been called.
     /// </summary>
     public ParameterResource? InstanceOwnerPassword { get; internal set; }
 
