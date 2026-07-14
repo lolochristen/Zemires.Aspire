@@ -56,4 +56,8 @@ var api = builder.AddProject<Projects.WorkflowApp_ApiService>("apiservice")
 
 worker.WithReference(api);
 
+var mcp = builder.AddProject<Projects.WorkflowApp_McpService>("mcpservice");
+n8n.WithReference(mcp);
+worker.WithReference(mcp);
+
 builder.Build().Run();

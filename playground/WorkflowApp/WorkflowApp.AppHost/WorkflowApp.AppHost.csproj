@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Zemires.Aspire.Hosting.N8n\Zemires.Aspire.Hosting.N8n.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\WorkflowApp.ApiService\WorkflowApp.ApiService.csproj" />
+    <ProjectReference Include="..\WorkflowApp.McpService\WorkflowApp.McpService.csproj" />
   </ItemGroup>
 
   <ItemGroup>

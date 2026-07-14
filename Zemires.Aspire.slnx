@@ -23,6 +23,7 @@
   <Folder Name="/playground/WorkflowApp/">
     <Project Path="playground/WorkflowApp/WorkflowApp.ApiService/WorkflowApp.ApiService.csproj" />
     <Project Path="playground/WorkflowApp/WorkflowApp.AppHost/WorkflowApp.AppHost.csproj" />
+    <Project Path="playground/WorkflowApp/WorkflowApp.McpService/WorkflowApp.McpService.csproj" />
     <Project Path="playground/WorkflowApp/WorkflowApp.ServiceDefaults/WorkflowApp.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
