@@ -7,8 +7,11 @@ public class N8nResource : ContainerResource, IResourceWithConnectionString
 {
     internal const string PrimaryEndpointName = "http";
 
+    /// <summary>
+    /// Initializes a new <see cref="N8nResource"/>.
+    /// </summary>
     /// <param name="name">The name of the resource.</param>
-    /// <param name="timeZone">A parameter that contains the N8n master key.</param>
+    /// <param name="encryptionKeyParameter">A parameter that contains the n8n encryption key.</param>
     public N8nResource(string name, ParameterResource encryptionKeyParameter) : base(name)
     {
         EncryptionKeyParameter = encryptionKeyParameter;
@@ -41,9 +44,9 @@ public class N8nResource : ContainerResource, IResourceWithConnectionString
     /// Gets the connection URI expression for the N8n server.
     /// </summary>
     /// <remarks>
-    /// Format: <c>http://{host}:{port}</c>.
+    /// Format: <c>{scheme}://{host}:{port}</c>.
     /// </remarks>
-    public ReferenceExpression UriExpression => ReferenceExpression.Create($"http://{Host}:{Port}");
+    public ReferenceExpression UriExpression => ReferenceExpression.Create($"{PrimaryEndpoint.Scheme}://{Host}:{Port}");
 
     /// <summary>
     /// Gets the ParameterResource that identifies the encryption key used to protect sensitive data.
@@ -52,7 +55,7 @@ public class N8nResource : ContainerResource, IResourceWithConnectionString
 
     /// <summary>
     /// Gets the ParameterResource that holds the plaintext instance owner password, or <see langword="null"/> if
-    /// <see cref="CockroachDBBuilderExtensions.WithInstanceOwner"/> has not been called.
+    /// <see cref="N8nBuilderExtensions.WithInstanceOwner"/> has not been called.
     /// </summary>
     public ParameterResource? InstanceOwnerPassword { get; internal set; }
 

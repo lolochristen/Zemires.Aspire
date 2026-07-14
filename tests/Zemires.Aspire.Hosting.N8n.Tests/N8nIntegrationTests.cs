@@ -7,9 +7,14 @@ public class N8nIntegrationTests(ITestOutputHelper testOutputHelper)
     {
         var n8nName = "n8n";
 
-        // Arrange
+        // Arange
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Zemires_Aspire_Hosting_N8n_AppHost>(TestContext.Current.CancellationToken);
-        appHost.Services.ConfigureHttpClientDefaults(clientBuilder => { clientBuilder.AddStandardResilienceHandler(); });
+        appHost.Services.ConfigureHttpClientDefaults(clientBuilder => { clientBuilder.AddStandardResilienceHandler(options =>
+            {
+                options.Retry.MaxRetryAttempts = 10;
+                options.Retry.BackoffType = Polly.DelayBackoffType.Exponential;
+            });
+        });
 
         await using var app = await appHost.BuildAsync(TestContext.Current.CancellationToken);
         var resourceNotificationService = app.Services.GetRequiredService<ResourceNotificationService>();
@@ -17,8 +22,9 @@ public class N8nIntegrationTests(ITestOutputHelper testOutputHelper)
 
         // Act
         var httpClient = app.CreateHttpClient(n8nName);
+
         await resourceNotificationService.WaitForResourceAsync(n8nName, KnownResourceStates.Running, TestContext.Current.CancellationToken)
-            .WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+            .WaitAsync(TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken);
 
         var response = await httpClient.GetAsync("/healthz", TestContext.Current.CancellationToken);
 

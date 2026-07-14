@@ -1,7 +1,5 @@
 using Aspire.Hosting.ApplicationModel;
-using CommunityToolkit.Aspire.Hosting.N8n;
-using Microsoft.Extensions.DependencyInjection;
-using System.Text.Json;
+using Zemires.Aspire.Hosting.N8n;
 
 namespace Aspire.Hosting;
 
@@ -12,6 +10,7 @@ public static partial class N8nBuilderExtensions
 {
     private const int N8nRunnersPort = 5680;
     private const int N8nBrokerPort = 5679;
+    private const string BrokerEndpointName = "broker";
 
     /// <summary>
     /// Adds a task runner instance for the given N8n resource.
@@ -27,17 +26,19 @@ public static partial class N8nBuilderExtensions
         IResourceBuilder<ParameterResource>? sharedAuthToken = null)
     {
         ArgumentNullException.ThrowIfNull(n8nBuilder);
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
-        var sharedAuthTokenParameter = sharedAuthToken?.Resource ?? ParameterResourceBuilderExtensions.CreateDefaultPasswordParameter(n8nBuilder.ApplicationBuilder, $"{name}-runners-auth-token");
+        var sharedAuthTokenParameter = sharedAuthToken?.Resource ?? ParameterResourceBuilderExtensions.CreateDefaultPasswordParameter(n8nBuilder.ApplicationBuilder, $"{n8nBuilder.Resource.Name}-{name}-runners-auth-token");
 
         n8nBuilder.WithEnvironment("N8N_RUNNERS_MODE", "external")
             .WithEnvironment("N8N_RUNNERS_BROKER_LISTEN_ADDRESS", "0.0.0.0")
             .WithEnvironment("N8N_RUNNERS_AUTH_TOKEN", sharedAuthTokenParameter)
-            .WithHttpEndpoint(targetPort: N8nBrokerPort, name: "broker");
+            .WithHttpEndpoint(targetPort: N8nBrokerPort, name: BrokerEndpointName);
 
         var runner = new N8nTaskRunnerResource(n8nBuilder.Resource.Name + "-" + name, n8nBuilder.Resource);
 
-        var brokerEndpoint = ReferenceExpression.Create($"http://{n8nBuilder.Resource.PrimaryEndpoint.Property(EndpointProperty.Host)}:{N8nBrokerPort.ToString()}");
+        var broker = n8nBuilder.Resource.GetEndpoint(BrokerEndpointName);
+        var brokerEndpoint = ReferenceExpression.Create($"http://{broker.Property(EndpointProperty.Host)}:{broker.Property(EndpointProperty.TargetPort)}");
 
         var runnerBuilder = n8nBuilder.ApplicationBuilder.AddResource(runner)
             .WithAnnotation(new ContainerImageAnnotation { Image = N8nContainerImageTags.ImageRunners, Tag = N8nContainerImageTags.Tag, Registry = N8nContainerImageTags.Registry })

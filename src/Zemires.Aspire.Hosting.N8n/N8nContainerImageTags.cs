@@ -1,4 +1,4 @@
-namespace CommunityToolkit.Aspire.Hosting.N8n;
+namespace Zemires.Aspire.Hosting.N8n;
 
 internal static class N8nContainerImageTags
 {

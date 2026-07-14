@@ -18,7 +18,7 @@ public class N8nWorkerResource : N8nResource, IResourceWithParent<N8nResource>
     }
 
     /// <summary>
-    /// Gets or sets the parent <see cref="N8nResource"/> in the n8n resource hierarchy.
+    /// Gets the parent <see cref="N8nResource"/> in the n8n resource hierarchy.
     /// </summary>
-    public N8nResource Parent { get; set; }
+    public N8nResource Parent { get; }
 }

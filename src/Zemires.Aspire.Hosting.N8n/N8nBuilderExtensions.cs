@@ -1,5 +1,5 @@
 using Aspire.Hosting.ApplicationModel;
-using CommunityToolkit.Aspire.Hosting.N8n;
+using Zemires.Aspire.Hosting.N8n;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
 
@@ -40,13 +40,13 @@ public static partial class N8nBuilderExtensions
         int? port = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
-        ArgumentNullException.ThrowIfNull(name);
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         var encryptionKeyParameter = encryptionKey?.Resource ?? ParameterResourceBuilderExtensions.CreateDefaultPasswordParameter(builder, $"{name}-encryption-key");
 
-        var N8n = new N8nResource(name, encryptionKeyParameter);
+        var n8n = new N8nResource(name, encryptionKeyParameter);
 
-        var n8nBuilder = builder.AddResource(N8n)
+        var n8nBuilder = builder.AddResource(n8n)
             .WithAnnotation(new ContainerImageAnnotation { Image = N8nContainerImageTags.Image, Tag = N8nContainerImageTags.Tag, Registry = N8nContainerImageTags.Registry })
             .WithHttpEndpoint(targetPort: N8nPort, port: port, name: N8nResource.PrimaryEndpointName, env: "N8N_PORT")
             .WithHttpHealthCheck("/healthz", 200, N8nResource.PrimaryEndpointName)
@@ -54,7 +54,7 @@ public static partial class N8nBuilderExtensions
             .WithEnvironment("OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS", "true")
             .WithEnvironment("N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS", "false")
             .WithEnvironment("N8N_ENCRYPTION_KEY", encryptionKeyParameter)
-            .WithEnvironment("WEBHOOK_URL", N8n.GetEndpoint(N8nResource.PrimaryEndpointName, builder.ExecutionContext.IsPublishMode ? KnownNetworkIdentifiers.PublicInternet : KnownNetworkIdentifiers.LocalhostNetwork));
+            .WithEnvironment("WEBHOOK_URL", n8n.GetEndpoint(N8nResource.PrimaryEndpointName, builder.ExecutionContext.IsPublishMode ? KnownNetworkIdentifiers.PublicInternet : KnownNetworkIdentifiers.LocalhostNetwork));
 
 
 #pragma warning disable ASPIRECERTIFICATES001
@@ -189,7 +189,7 @@ public static partial class N8nBuilderExtensions
     public static IResourceBuilder<N8nResource> WithDataBindMount(this IResourceBuilder<N8nResource> builder, string source)
     {
         ArgumentNullException.ThrowIfNull(builder);
-        ArgumentNullException.ThrowIfNull(source);
+        ArgumentException.ThrowIfNullOrEmpty(source);
 
         return builder.WithBindMount(source, "/home/node/.n8n");
     }
@@ -231,7 +231,7 @@ public static partial class N8nBuilderExtensions
         IResourceBuilder<ParameterResource>? password = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
-        ArgumentNullException.ThrowIfNullOrEmpty(email);
+        ArgumentException.ThrowIfNullOrEmpty(email);
 
         var passwordParameter = password?.Resource
             ?? ParameterResourceBuilderExtensions.CreateDefaultPasswordParameter(builder.ApplicationBuilder, $"{builder.Resource.Name}-instance-owner-password");
@@ -250,15 +250,6 @@ public static partial class N8nBuilderExtensions
             });
     }
 
-    /// <summary>
-    /// Configures the resource builder to enable OpenTelemetry Protocol (OTLP) exporting for N8n resources using the
-    /// HTTP/Protobuf protocol.
-    /// </summary>
-    /// <remarks>This method sets environment variables required for OTLP integration with N8n, including
-    /// enabling OTEL support and mapping standard OTEL environment variables to N8n-specific variables. Use this method
-    /// to ensure that telemetry data is exported from N8n resources in a compatible format.</remarks>
-    /// <param name="builder">The resource builder to configure for OTLP exporting. Cannot be null.</param>
-    /// <returns>The same <see cref="IResourceBuilder{N8nResource}"/> instance for chaining.</returns>
     /// <summary>
     /// Configures the N8n resource with an enterprise license key.
     /// Sets <c>N8N_LICENSE_ACTIVATION_KEY</c> and suppresses the usage page via <c>N8N_HIDE_USAGE_PAGE</c>.
@@ -339,7 +330,7 @@ public static partial class N8nBuilderExtensions
         return builder.WithEnvironment(ctx =>
         {
             ctx.EnvironmentVariables["N8N_COMMUNITY_PACKAGES_ENABLED"] = "true";
-            if (packageNames != null && packageNames.Length > 0)
+            if (packageNames.Length > 0)
             {
                 ctx.EnvironmentVariables["N8N_COMMUNITY_PACKAGES_MANAGED_BY_ENV"] = "true";
                 ctx.EnvironmentVariables["N8N_COMMUNITY_PACKAGES"] = JsonSerializer.Serialize(packageNames.Select(p => new { name = p }).ToArray(), JsonSerializerOptions.Web);

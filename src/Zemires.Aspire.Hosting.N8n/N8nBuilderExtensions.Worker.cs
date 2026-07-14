@@ -1,7 +1,5 @@
 using Aspire.Hosting.ApplicationModel;
-using CommunityToolkit.Aspire.Hosting.N8n;
-using Microsoft.Extensions.DependencyInjection;
-using System.Text.Json;
+using Zemires.Aspire.Hosting.N8n;
 
 namespace Aspire.Hosting;
 
@@ -20,10 +18,11 @@ public static partial class N8nBuilderExtensions
     /// <param name="n8nBuilder">The primary N8n resource builder to attach the worker to.</param>
     /// <param name="name">The name to use for the worker resource.</param>
     /// <param name="port">The host port to bind the underlying container to.</param>
-    /// <returns>A new <see cref="IResourceBuilder{N8nResource}"/> for the worker instance.</returns>
+    /// <returns>A new <see cref="IResourceBuilder{T}"/> for the <see cref="N8nWorkerResource"/> instance.</returns>
     public static IResourceBuilder<N8nWorkerResource> AddWorker(this IResourceBuilder<N8nResource> n8nBuilder, string name, int? port = null)
     {
         ArgumentNullException.ThrowIfNull(n8nBuilder);
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         // worker does not support https
         var worker = new N8nWorkerResource(n8nBuilder.Resource.Name + "-" + name, n8nBuilder.Resource);
