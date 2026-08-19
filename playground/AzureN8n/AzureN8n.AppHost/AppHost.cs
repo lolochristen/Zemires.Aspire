@@ -7,7 +7,6 @@ var builder = DistributedApplication.CreateBuilder(args);
 var tenantId = builder.Configuration["Azure:TenantId"].ToString();
 
 var clientSecret = builder.AddParameter("client-secret", true); // password from: az ad app credential reset --id $APP_ID --display-name "client-app-secret"
-//var apiKey = builder.AddParameter("foundry-api-key", true); // needs to be set manually
 var n8nExternalDomain = builder.AddParameter("n8n-external-domain");
 
 var law = builder.AddAzureLogAnalyticsWorkspace("law");
@@ -22,6 +21,7 @@ var db = postgres.AddDatabase("n8n-db", "n8n");
 
 var foundry = builder.AddAzureAIFoundry("foundry");
 var chat = foundry.AddDeployment("chat", AIFoundryModel.OpenAI.Gpt5Mini);
+chat.Resource.SkuCapacity = 1000;
 
 var redis = builder.AddAzureManagedRedis("redis")
     .WithAccessKeyAuthentication()
@@ -105,11 +105,9 @@ output clientAppId string = clientApp.appId
 //    .WithConfig("config.yaml")
 //    .WithReference(appi);
 
-var api = builder.AddProject<AzureN8n_ApiService>("api");
+var api = builder.AddProject<AzureN8n_ApiService>("api")
+    .WithReference(appi);
 
-//var password = builder.AddParameter("n8n-password", true);
-
-//var credentialsOverwrite = builder.AddParameter("n8n-credentials-overwrite", ReferenceExpression.Create($"asd"), secret: true);
 //var credentialsOverwrite = ReferenceExpression.Create($"{{\"azureOpenAiApi\": {{\"endpoint\":\"https://{foundry.Resource.NameOutputReference}.openai.azure.com\", \"apiKey\":\"{apiKey}\", \"resourceName\":\"{foundry.Resource.NameOutputReference}\", \"apiVersion\":\"2025-03-01-preview\" }}, \"azureEntraCognitiveServicesOAuth2Api\": {{ \"endpoint\":\"{foundry.Resource.Endpoint}\", \"clientId\":\"{appReg.GetOutput("clientAppId")}\", \"clientSecret\":\"{clientSecret}\", \"resourceName\":\"{foundry.Resource.NameOutputReference}\", \"tenantId\":\"{tenantId}\", \"apiVersion\":\"2025-03-01-preview\" }} }}");
 var credentialsOverwrite = ReferenceExpression.Create($"{{ \"azureEntraCognitiveServicesOAuth2Api\": {{ \"clientId\":\"{appReg.GetOutput("clientAppId")}\", \"clientSecret\":\"{clientSecret}\", \"tenantId\":\"{tenantId}\" }} }}");
 
@@ -118,20 +116,25 @@ var n8n = builder.AddN8n("n8n", port: 5567)
     .WithInstanceOwner("admin@dev.local", "Admin", "Local")
     .WithTimeZone("Europe/Zurich")
     //.WithOtlpExporter()
-    //.WithOpenTelemetryCollectorRouting(collector)
+    ////.WithOpenTelemetryCollectorRouting(collector); // has error
+    //.WithEnvironment(callback =>
+    //{
+    //    var otlpProtocol = callback.EnvironmentVariables.GetValueOrDefault("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
+    //    var endpoint = collector.Resource.GetEndpoint(otlpProtocol.ToString() ?? "grpc");
+    //    if (!callback.EnvironmentVariables.TryAdd("OTEL_EXPORTER_OTLP_ENDPOINT", endpoint))
+    //    {
+    //        callback.EnvironmentVariables["OTEL_EXPORTER_OTLP_ENDPOINT"] = endpoint;
+    //    }
+    //})
     .WithExternalHttpEndpoints()
-    .WithPostgresDatabase(db/*, true*/)
+    .WithPostgresDatabase(db, true)
     .WithQueueMode(redis)
     .WithReference(chat)
     .WaitFor(chat)                                      // issue: {foundry.Resource.NameOutputReference} contains a dash 
     .WithEnvironment("CREDENTIALS_OVERWRITE_DATA", credentialsOverwrite)
-    .WithEnvironment("CREDENTIALS_OVERWRITE_PERSISTENCE", "true")
-    .WithCommunityPackages("n8n-nodes-openapi-node@0.1.4")
+    //.WithEnvironment("CREDENTIALS_OVERWRITE_PERSISTENCE", "true") //  only overwrite endpoint is used for data persistence
+    .WithCommunityPackages() // e.g. "n8n-nodes-openapi-node@1.0.9"
     .WithReference(api);
-    //.PublishAsAzureContainerApp((infra, app) =>
-    //{
-    //    app.Template.Scale.MaxReplicas = 1;
-    //});
 
 // with enterprise license
 //n8n.WithEnvironment("N8N_SSO_MANAGED_BY_ENV", "true")
@@ -156,13 +159,31 @@ n8n.WithEnvironment("EXTERNAL_HOOK_FILES", "/home/node/.n8n/hooks.js")
     .WaitFor(appReg);
 
 var worker = n8n.AddWorker("worker", port: 5568)
-    .WithPostgresDatabase(db/*, true*/)
+    .WithPostgresDatabase(db, true)
     .WithQueueMode(redis)
     .WithTimeZone("Europe/Zurich")
-    .WithCommunityPackages("n8n-nodes-openapi-node@0.1.4")
+    .WithCommunityPackages()
+    .WithEnvironment("CREDENTIALS_OVERWRITE_DATA", credentialsOverwrite) // needs to be set for worker as well, only endpoint is used for data persistence
     .WithReference(api);
-    //.WithOtlpExporter();
-    //.WithOpenTelemetryCollectorRouting(collector);
+    //.WithOtlpExporter()
+    ////.WithOpenTelemetryCollectorRouting(collector); // has error
+    //.WithEnvironment(callback =>
+    //{
+    //    var otlpProtocol = callback.EnvironmentVariables.GetValueOrDefault("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
+    //    var endpoint = collector.Resource.GetEndpoint(otlpProtocol.ToString() ?? "grpc");
+    //    if (!callback.EnvironmentVariables.TryAdd("OTEL_EXPORTER_OTLP_ENDPOINT", endpoint))
+    //    {
+    //        callback.EnvironmentVariables["OTEL_EXPORTER_OTLP_ENDPOINT"] = endpoint;
+    //    }
+    //});
+
+var taskRunner = worker.AddTaskRunner("runner")
+    .PublishAsAzureContainerAppSidecar(worker, (sidecar) =>
+    {
+        // adjust uri to use localhost
+        var env = sidecar.Env.FirstOrDefault(p => p.Value.Name.Value == "N8N_RUNNERS_TASK_BROKER_URI");
+        env.Value.Value = "http://localhost:5679";
+    });
 
 if (builder.ExecutionContext.IsRunMode)
 {

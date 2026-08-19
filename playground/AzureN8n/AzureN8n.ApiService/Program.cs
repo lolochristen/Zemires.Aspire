@@ -24,12 +24,12 @@ app.MapOpenApi();
 
 app.UseHttpsRedirection();
 
-app.MapGet("/add", (int a, int b) =>
+app.MapGet("/api/add", (double a, double b) =>
 {
-    return a + b;
+    return Results.Ok(new { result = a + b });
 })
 .WithName("GetAdd")
-.Produces(200, typeof(int));
+.Produces(200, typeof(object));
 
 app.MapMcp();
 

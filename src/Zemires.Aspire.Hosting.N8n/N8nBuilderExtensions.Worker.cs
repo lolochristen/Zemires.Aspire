@@ -69,8 +69,6 @@ public static partial class N8nBuilderExtensions
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(redis);
 
-        builder.WithEnvironment("CREDENTIALS_OVERWRITE_PERSISTENCE", "true");
-
         if (redis.Resource is IResourceWithConnectionString resourceWithConnection)
         {
             return builder.WithEnvironment("EXECUTIONS_MODE", "queue")

@@ -2,6 +2,7 @@ using Aspire.Hosting.ApplicationModel;
 using Zemires.Aspire.Hosting.N8n;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Aspire.Hosting;
 
@@ -50,6 +51,7 @@ public static partial class N8nBuilderExtensions
             .WithAnnotation(new ContainerImageAnnotation { Image = N8nContainerImageTags.Image, Tag = N8nContainerImageTags.Tag, Registry = N8nContainerImageTags.Registry })
             .WithHttpEndpoint(targetPort: N8nPort, port: port, name: N8nResource.PrimaryEndpointName, env: "N8N_PORT")
             .WithHttpHealthCheck("/healthz", 200, N8nResource.PrimaryEndpointName)
+            .WithEnvironment("QUEUE_HEALTH_CHECK_ACTIVE", "true")
             .WithIconName("BranchFork", IconVariant.Regular)
             .WithEnvironment("OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS", "true")
             .WithEnvironment("N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS", "false")
@@ -142,14 +144,14 @@ public static partial class N8nBuilderExtensions
     /// <param name="database">A resource builder for the PostgreSQL database. Must expose connection string information.</param>
     /// <returns>The same <see cref="IResourceBuilder{N8nResource}"/> instance for chaining.</returns>
     /// <exception cref="ArgumentException">Thrown when the provided <paramref name="database"/> does not expose connection string information.</exception>
-    public static IResourceBuilder<N8nResource> WithPostgresDatabase(this IResourceBuilder<N8nResource> builder, IResourceBuilder<IResource> database)
+    public static IResourceBuilder<N8nResource> WithPostgresDatabase(this IResourceBuilder<N8nResource> builder, IResourceBuilder<IResource> database, bool useTls = false)
     {
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(database);
 
         if (database.Resource is IResourceWithConnectionString resourceWithConnection)
         {
-            return builder.WithEnvironment("DB_TYPE", "postgresdb")
+            builder.WithEnvironment("DB_TYPE", "postgresdb")
                 .WithEnvironment("DB_POSTGRESDB_DATABASE", $"{resourceWithConnection.GetConnectionProperty("DatabaseName")}")
                 .WithEnvironment("DB_POSTGRESDB_HOST", $"{resourceWithConnection.GetConnectionProperty("Host")}")
                 .WithEnvironment("DB_POSTGRESDB_PORT", $"{resourceWithConnection.GetConnectionProperty("Port")}")
@@ -157,6 +159,14 @@ public static partial class N8nBuilderExtensions
                 .WithEnvironment("DB_POSTGRESDB_PASSWORD", $"{resourceWithConnection.GetConnectionProperty("Password")}")
                 .WithReferenceRelationship(database)
                 .WaitFor(database);
+
+            if (useTls)
+            {
+                builder.WithEnvironment("DB_POSTGRESDB_SSL_ENABLED", "true")
+                    .WithEnvironment("DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED", "true");
+            }
+
+            return builder;
         }
         else
         {
@@ -243,6 +253,7 @@ public static partial class N8nBuilderExtensions
             .WithEnvironment("N8N_INSTANCE_OWNER_EMAIL", email)
             .WithEnvironment("N8N_INSTANCE_OWNER_FIRST_NAME", firstName)
             .WithEnvironment("N8N_INSTANCE_OWNER_LAST_NAME", lastName)
+            .WithEnvironment("N8N_INSTANCE_OWNER_PASSWORD", passwordParameter) // not used but to store value in aspire json file
             .WithEnvironment(async ctx =>
             {
                 var plainPassword = await passwordParameter.GetValueAsync(ctx.CancellationToken);
@@ -309,10 +320,23 @@ public static partial class N8nBuilderExtensions
         return builder.WithOtlpExporter(OtlpProtocol.HttpProtobuf)
             .WithEnvironment(ctx =>
             {
-                ctx.EnvironmentVariables["N8N_OTEL_ENABLED"] = "true";
-                ctx.EnvironmentVariables["N8N_OTEL_EXPORTER_OTLP_ENDPOINT"] = ctx.EnvironmentVariables["OTEL_EXPORTER_OTLP_ENDPOINT"];
-                ctx.EnvironmentVariables["N8N_OTEL_EXPORTER_OTLP_HEADERS"] = ctx.EnvironmentVariables["OTEL_EXPORTER_OTLP_HEADERS"];
-                ctx.EnvironmentVariables["N8N_OTEL_EXPORTER_SERVICE_NAME"] = ctx.EnvironmentVariables["OTEL_SERVICE_NAME"];
+                if (ctx.EnvironmentVariables.TryGetValue("OTEL_EXPORTER_OTLP_ENDPOINT", out var otelEndpoint))
+                {
+                    ctx.EnvironmentVariables["N8N_OTEL_EXPORTER_OTLP_ENDPOINT"] = otelEndpoint;
+                    ctx.EnvironmentVariables["N8N_OTEL_ENABLED"] = "true";
+                }
+                else
+                {
+                    ctx.Logger.LogWarning("OTEL_EXPORTER_OTLP_ENDPOINT is not set. N8n OTLP exporter will not be enabled.");
+                }    
+                if (ctx.EnvironmentVariables.TryGetValue("OTEL_EXPORTER_OTLP_HEADERS", out var otelHeaders))
+                {
+                    ctx.EnvironmentVariables["OTEL_EXPORTER_OTLP_HEADERS"] = otelHeaders;
+                }
+                if (ctx.EnvironmentVariables.TryGetValue("N8N_OTEL_EXPORTER_SERVICE_NAME", out var otelServiceName))
+                {
+                    ctx.EnvironmentVariables["N8N_OTEL_EXPORTER_SERVICE_NAME"] = otelServiceName;
+                }
             });
     }
 
@@ -336,5 +360,58 @@ public static partial class N8nBuilderExtensions
                 ctx.EnvironmentVariables["N8N_COMMUNITY_PACKAGES"] = JsonSerializer.Serialize(packageNames.Select(p => new { name = p }).ToArray(), JsonSerializerOptions.Web);
             }
         });
+    }
+
+    /// <summary>
+    /// Enables metrics collection for the N8n resource and configures which metrics to include.
+    /// </summary>
+    /// <param name="builder">The N8n resource builder to configure.</param>
+    /// <param name="configureOptions">An optional action to configure the metric options. If <see langword="null"/>, all metrics are enabled by default.</param>
+    /// <returns>The same <see cref="IResourceBuilder{N8nResource}"/> instance for chaining.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method enables the N8n metrics endpoint by setting <c>N8N_METRICS</c> to <c>true</c> and allows fine-grained control
+    /// over which metric categories to include through the <see cref="N8nMetricOptions"/> configuration.
+    /// </para>
+    /// <example>
+    /// Enable all metrics (default behavior):
+    /// <code lang="csharp">
+    /// var n8n = builder.AddN8n("n8n")
+    ///     .WithMetrics();
+    /// </code>
+    /// </example>
+    /// <example>
+    /// Enable metrics with custom configuration:
+    /// <code lang="csharp">
+    /// var n8n = builder.AddN8n("n8n")
+    ///     .WithMetrics(options =>
+    ///     {
+    ///         options.IncludeWebhookMetrics = false;
+    ///         options.IncludeQueueMetrics = true;
+    ///     });
+    /// </code>
+    /// </example>
+    /// </remarks>
+    public static IResourceBuilder<N8nResource> WithMetrics(this IResourceBuilder<N8nResource> builder, Action<N8nMetricOptions>? configureOptions = null)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        var options = new N8nMetricOptions();
+
+        if (configureOptions != null)
+        {
+            configureOptions(options);
+        }
+
+        return builder.WithEnvironment("N8N_METRICS", "true")
+            .WithEnvironment("N8N_METRICS_INCLUDE_WEBHOOK_METRICS", options.IncludeWebhookMetrics.ToString().ToLower())
+            .WithEnvironment("N8N_METRICS_INCLUDE_WORKFLOW_INFO", options.IncludeWorkflowInfo.ToString().ToLower())
+            .WithEnvironment("N8N_METRICS_INCLUDE_FORM_METRICS", options.IncludeFormMetrics.ToString().ToLower())
+            .WithEnvironment("N8N_METRICS_INCLUDE_WORKFLOW_ID_LABEL", options.IncludeWorkflowIdLabel.ToString().ToLower())
+            .WithEnvironment("N8N_METRICS_INCLUDE_NODE_TYPE_LABEL", options.IncludeNodeTypeLabel.ToString().ToLower())
+            .WithEnvironment("N8N_METRICS_INCLUDE_CREDENTIAL_TYPE_LABEL", options.IncludeCredentialTypeLabel.ToString().ToLower())
+            .WithEnvironment("N8N_METRICS_INCLUDE_API_ENDPOINTS", options.IncludeApiEndpoints.ToString().ToLower())
+            .WithEnvironment("N8N_METRICS_INCLUDE_API_PATH_LABEL", options.IncludeApiPathLabel.ToString().ToLower())
+            .WithEnvironment("N8N_METRICS_INCLUDE_QUEUE_METRICS", options.IncludeQueueMetrics.ToString().ToLower());
     }
 }

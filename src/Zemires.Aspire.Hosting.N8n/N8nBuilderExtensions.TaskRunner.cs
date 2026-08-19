@@ -13,7 +13,7 @@ public static partial class N8nBuilderExtensions
     private const string BrokerEndpointName = "broker";
 
     /// <summary>
-    /// Adds a task runner instance for the given N8n resource.
+    /// Adds a task runner instance for the given N8n resource as sidecar. Aspire does currently not support native sidecar pattern.
     /// </summary>
     /// <param name="n8nBuilder">The primary N8n resource builder to attach the worker to.</param>
     /// <param name="name">The name to use for the worker resource.</param>
@@ -37,8 +37,7 @@ public static partial class N8nBuilderExtensions
 
         var runner = new N8nTaskRunnerResource(n8nBuilder.Resource.Name + "-" + name, n8nBuilder.Resource);
 
-        var broker = n8nBuilder.Resource.GetEndpoint(BrokerEndpointName);
-        var brokerEndpoint = ReferenceExpression.Create($"http://{broker.Property(EndpointProperty.Host)}:{broker.Property(EndpointProperty.TargetPort)}");
+        var brokerEndpoint = n8nBuilder.Resource.GetEndpoint(BrokerEndpointName);
 
         var runnerBuilder = n8nBuilder.ApplicationBuilder.AddResource(runner)
             .WithAnnotation(new ContainerImageAnnotation { Image = N8nContainerImageTags.ImageRunners, Tag = N8nContainerImageTags.Tag, Registry = N8nContainerImageTags.Registry })

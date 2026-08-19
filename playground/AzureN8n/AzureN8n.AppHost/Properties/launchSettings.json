@@ -26,6 +26,16 @@
         "ASPIRE_DASHBOARD_MCP_ENDPOINT_URL": "http://localhost:18201",
         "ASPIRE_RESOURCE_SERVICE_ENDPOINT_URL": "http://localhost:20217"
       }
+    },
+    "publish": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "commandLineArgs": "--operation publish --step publish",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_ENVIRONMENT": "Development"
+      }
     }
+
   }
 }
